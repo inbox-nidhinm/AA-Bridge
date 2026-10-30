@@ -2,7 +2,7 @@
 
 A monospaced companion to Trupeer Slab. Every character takes the same 600-unit slot.
 
-Seven weights, Thin to Bold, of the 95 basic keyboard characters:
+Seven weights, Thin to Bold, with the original's character set: 616 of its 618 characters (676 glyphs), covering the Latin languages Trupeer Slab covers, Vietnamese included. The two left out are the fi and fl ligatures.
 
 - `fonts/variable/TrupeerSlabMono[wght].ttf`: one file with every weight from 100 to 700
 - `fonts/ttf` and `fonts/otf`: Thin, ExtraLight, Light, Regular, Medium, SemiBold and Bold
@@ -24,8 +24,18 @@ In every weight:
 - **Wide letters** (most capitals, m, w, &, @, %, and the Bold's widest lowercase) get narrower counters and serifs. Their stems keep their weight: x is moved towards a heavier drawing before narrowing (`G.condense`). m, w, M and W are kept slightly lighter so they don't read as dark blots.
 - **M** keeps upright legs with the V's point raised, as in Courier and IBM Plex Mono.
 - **For code:** the original's slashed zero is the default 0, ' and " are straight wedges, / and \ run from below the baseline to above the capitals, and the underscore fills the slot.
+- **Accented letters.** The source draws them as plain outlines, so `compose.py` matches each one against its base letter. The base is drawn as the base's own result (so í has the i's long slabs), and each accent goes back where it sat against the base's nearest anchor. Anchors are carried through every change, so accents stay centred on narrowed capitals.
+- **Everything else beyond the basic set** (Æ, Œ, ŋ, ð, currency, symbols, small figures, fractions, dashes, the LJ and DŽ digraphs) is used as drawn, or narrowed to fit the slot when too wide. The ellipsis is rebuilt from three period dots, since the source's Regular ellipsis has uneven, overlapping dots.
 
 Each change is a recipe in `recipes.py`. A glyph without a recipe is used as drawn.
+
+## Monospace practice
+
+- **No ligatures.** fi, fl, ff and the others are left out, with the `liga` feature, as joining two letters into one slot would break the grid.
+- **Combining accents take no room** and sit over the character before them; the `mark` and `mkmk` features place them exactly, from the anchors.
+- **Fractions, superiors and inferiors** take one slot per figure.
+- **Plain zero.** The slashed zero is the default; Stylistic Set 2 gives the original's plain one (the original's `zero` switch would do nothing here).
+- Kept from the original: `ccmp`, `locl` (Turkish i, Romanian comma accents, Catalan middle dot), `frac`, `numr`, `dnom`, `sups`, `subs`, `sinf`, `ordn`, `case`, and Stylistic Set 1 (the tilted o).
 
 ## Building
 

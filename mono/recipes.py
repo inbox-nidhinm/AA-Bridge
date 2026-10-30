@@ -1,6 +1,8 @@
 """How each glyph is adapted for the cell, in every weight. A glyph without a recipe
-is used as drawn, centred, unless it is too wide (see default)."""
-from tools import G, STEM
+is used as drawn, centred, unless it is too wide (see default). Accented letters are not
+listed: they are their base letter's result with the accents put back (see compose.py)."""
+import unicodedata
+from tools import G, STEM, REG, DRAWN, S
 
 R = {}
 
@@ -22,12 +24,16 @@ def same_change(*names):
 LOWER_TARGET = 660
 
 def default(g):
-    # the Bold's widest lowercase (a, n, p) are a little too wide for the cell
-    if g.width() > LOWER_TARGET: g.condense(LOWER_TARGET)
+    # capitals beyond the basic set (Æ, Œ, Ŋ, Ə...) are fitted like the basic capitals;
+    # anything else too wide (the Bold's a, n, p; æ, œ, fractions, dashes) is narrowed to fit
+    if not g.real: return
+    u = REG[g.name]['unicode']
+    if u and unicodedata.category(chr(int(u, 16))) == 'Lu': fit(g)
+    elif g.width() > LOWER_TARGET: g.condense(LOWER_TARGET)
 
 
 # Narrow letters: longer slabs, as typewriter monospaces do.
-@same_change('i')
+@same_change('i', 'idotless', 'idotaccent')
 def i(g):
     g.xmap([(41, -80), (86, 86), (275, 275), (310, 420)]); g.offset = 10
 
@@ -35,7 +41,7 @@ def i(g):
 def l(g):
     g.xmap([(34, -85), (80, 80), (266, 266), (301, 425)]); g.offset = 10
 
-@same_change('j')
+@same_change('j', 'jdotless')
 def j(g):
     # only the top serif grows (to the i's length); the hook keeps its drawing
     g.xmap([(54, -46), (94, 94)], idx=[0], above=400)
@@ -92,6 +98,7 @@ def M(g):
     g.like_regular(legs, idx=range(1, 9))
     g.condense(g.width([0]) - d, idx=[0], keep=0.85)
     g.ymap([(0, 170), (700, 700)], idx=[0])
+    g.center_anchors()
 
 CAP_TARGET = 610
 
@@ -116,8 +123,9 @@ def underscore(g):
 
 
 # Code needs these to be told apart: the original's slashed zero, and straight quotes
-# drawn as upright wedges in place of the original's curly ones.
-SOURCE = {'zero': 'zero.zero'}
+# drawn as upright wedges in place of the original's curly ones. The slashed and plain
+# zeros swap places, so the plain one is the alternate (Stylistic Set 2, see build.py).
+SOURCE = {'zero': 'zero.zero', 'zero.zero': 'zero', 'zero.lf': 'zero.lf.zero', 'zero.lf.zero': 'zero.lf'}
 
 def wedge(cx, stem, top=700, bottom=440):
     wt, wb = stem * 0.93, stem * 0.45
@@ -126,13 +134,13 @@ def wedge(cx, stem, top=700, bottom=440):
 
 @recipe('quotesingle')
 def quotesingle(g):
-    g.c = [wedge(345, STEM[g.master])]
+    g.set_contours([wedge(345, STEM[g.master])])
 
 @recipe('quotedbl')
 def quotedbl(g):
     stem = STEM[g.master]
     apart = stem * 0.93 / 2 + 37
-    g.c = [wedge(345 - apart, stem), wedge(345 + apart, stem)]
+    g.set_contours([wedge(345 - apart, stem), wedge(345 + apart, stem)])
 
 
 @recipe('slash', 'backslash')
@@ -150,3 +158,17 @@ def long_slash(g):
             d = n[1] - ym
             n[0] += d * (k - 1) * run
             n[1] = ym + d * k + (325 - ym)
+
+
+@recipe('ellipsis')
+def ellipsis(g):
+    # the source's Regular ellipsis has dots of different sizes, two overlapping, so it is
+    # rebuilt: three of the period's dots (80%, smaller in the Bold), spread evenly across the slot
+    dot = DRAWN[g.master]['period']['contours'][0]
+    xs, ys = [n[0] for n in dot], [n[1] for n in dot]
+    cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    k_ = min(0.8, 160 / (max(xs) - min(xs)))     # gaps at least half a dot, even in the Bold
+    w = (max(xs) - min(xs)) * k_
+    step = (640 - w) / 2
+    g.set_contours([[[300 / S + k * step + (n[0] - cx) * k_, cy + (n[1] - cy) * k_, n[2]] for n in dot]
+                    for k in (-1, 0, 1)])

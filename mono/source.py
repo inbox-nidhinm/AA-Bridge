@@ -1,6 +1,7 @@
 """Reads one layer of the original Trupeer Slab source as plain outlines:
-name -> {width, unicode, contours}, each contour a list of [x, y, type] nodes
-(line, curve, offcurve, as Glyphs stores them), with components drawn in place."""
+name -> {width, unicode, contours, anchors}, each contour a list of [x, y, type] nodes
+(line, curve, offcurve, as Glyphs stores them), with components drawn in place,
+and anchors as {name: [x, y]}."""
 import os
 import glyphsLib
 
@@ -35,5 +36,6 @@ def load(layer_name):
     for g in f.glyphs:
         l = layer(g)
         if l is not None:
-            data[g.name] = dict(width=l.width, unicode=g.unicode, contours=flat(g))
+            data[g.name] = dict(width=l.width, unicode=g.unicode, contours=flat(g),
+                                anchors={a.name: [a.position.x, a.position.y] for a in l.anchors})
     return data

@@ -2,11 +2,14 @@
 
 Draws the Thin, Regular and Bold masters into build/ as UFOs with a designspace, then
 makes the variable font (fonts/variable) and seven static weights (fonts/ttf, fonts/otf)."""
-import os, subprocess, sys
-import ufoLib2
+import os, re, subprocess, sys
+import glyphsLib, ufoLib2
+from ufoLib2.objects import Anchor
 from fontTools.designspaceLib import DesignSpaceDocument, AxisDescriptor, SourceDescriptor, InstanceDescriptor
 from tools import G, REG, S, MASTERS
 from recipes import R, SOURCE, default
+from source import SOURCE as GLYPHS_FILE
+import compose
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILD = os.path.join(HERE, 'build')
@@ -18,6 +21,41 @@ AXIS_MAP = [(100, 100), (200, 180), (300, 260), (400, 378), (500, 492), (600, 58
 WEIGHTS = {'Thin': 100, 'ExtraLight': 200, 'Light': 300, 'Regular': 400, 'Medium': 500, 'SemiBold': 600, 'Bold': 700}
 MASTER_AT = {'Thin': 100, 'Regular': 378, 'Bold': 700}
 X_HEIGHT = {'Thin': 517, 'Regular': 528, 'Bold': 539}
+
+# The original's OpenType features and glyph categories, as glyphsLib writes them
+_ORIGINAL = glyphsLib.to_designspace(glyphsLib.GSFont(GLYPHS_FILE), minimal=True).sources[0].font
+CATEGORIES = dict(_ORIGINAL.lib.get('public.openTypeCategories', {}))
+# Monospace practice: no ligatures (they would join two letters into one slot)
+LIGATURES = {n for n, c in CATEGORIES.items() if c == 'ligature'}
+MARKS = {n for n, c in CATEGORIES.items() if c == 'mark'}     # combining: no width
+NAMES = [n for n in REG if n not in LIGATURES and n != '.notdef']
+STRUCTURE = compose.find([n for n in NAMES if n not in MARKS and n not in R])
+
+
+def features():
+    fea = _ORIGINAL.features.text
+    fea = re.sub(r'feature liga \{.*?\} liga;\n*', '', fea, flags=re.S)
+    # the slashed zero is the default here, so the original's slashed-zero switch becomes
+    # a set that gives the plain one back
+    fea = fea.replace('feature zero;\n', '')
+    fea = fea.replace('feature zero {', 'feature ss02 {\nfeatureNames { name "Plain zero"; };')
+    fea = fea.replace('} zero;', '} ss02;')
+    return fea
+
+
+def make(name, style, done):
+    """A glyph's finished contours, anchors and centre (in the cell's units)."""
+    if name not in done:
+        if name in STRUCTURE:
+            base = make(STRUCTURE[name][0], style, done)
+            contours, anchors = compose.assemble(name, style, STRUCTURE[name], base)
+        else:
+            gl = G(SOURCE.get(name, name), style)
+            R.get(name, default)(gl)
+            contours, anchors = gl.final(), gl.placed
+        xs = [n[0] for c in contours for n in c]
+        done[name] = (contours, anchors, (min(xs) + max(xs)) / 2 if xs else 300)
+    return done[name]
 
 
 def master(style):
@@ -39,29 +77,37 @@ def master(style):
     i.openTypeNameLicense = 'This Font Software is licensed under the SIL Open Font License, Version 1.1.'
     i.openTypeNameLicenseURL = 'https://openfontlicense.org'
 
-    order = ['.notdef', 'space']
+    order = ['.notdef']
     nd = f.newGlyph('.notdef'); nd.width = 600
     pp = nd.getPointPen()
     for pts in ([(60, 0), (540, 0), (540, 640), (60, 640)], [(100, 40), (100, 600), (500, 600), (500, 40)]):
         pp.beginPath()
         for p in pts: pp.addPoint(p, 'line')
         pp.endPath()
-    sp = f.newGlyph('space'); sp.width = 600; sp.unicodes = [0x20]
-
-    for name, g in REG.items():
-        u = g['unicode']
-        if not u or not (0x21 <= int(u, 16) <= 0x7E): continue
-        gl = G(SOURCE.get(name, name), style)
-        R.get(name, default)(gl)
-        ug = f.newGlyph(name); ug.width = 600; ug.unicodes = [int(u, 16)]
+    done = {}
+    for name in NAMES:
+        contours, anchors, mid = make(name, style, done)
+        dx = 0
+        if name in MARKS:
+            # combining accents take no room and sit over the character before them
+            attach = next((a for a in sorted(anchors) if a.startswith('_')), None)
+            dx = -300 - (anchors[attach][0] if attach else mid)
+        ug = f.newGlyph(name)
+        ug.width = 0 if name in MARKS else 600
+        u = REG[name]['unicode']
+        if u: ug.unicodes = [int(u, 16)]
         pp = ug.getPointPen()
-        for c in gl.final():
+        for c in contours:
             pp.beginPath()
             for x, y, t in c:
-                pp.addPoint((x, y), None if t == 'offcurve' else t)
+                pp.addPoint((x + dx, y), None if t == 'offcurve' else t)
             pp.endPath()
+        for a, (x, y) in sorted(anchors.items()):
+            ug.anchors.append(Anchor(round(x + dx), round(y), a))
         order.append(name)
     f.glyphOrder = order
+    f.features.text = features()
+    f.lib['public.openTypeCategories'] = {n: c for n, c in CATEGORIES.items() if n in f}
     return f
 
 

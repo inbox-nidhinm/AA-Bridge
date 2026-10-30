@@ -13,9 +13,10 @@ BOLD_AT = 0.8
 
 
 def _between(a, b, t):
-    return {n: dict(a[n], contours=[[[p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1]), p[2]]
-                                      for p, q in zip(pc, qc)]
-                                     for pc, qc in zip(a[n]['contours'], b[n]['contours'])])
+    mix = lambda p, q: [p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]
+    return {n: dict(a[n], contours=[[mix(p, q) + [p[2]] for p, q in zip(pc, qc)]
+                                     for pc, qc in zip(a[n]['contours'], b[n]['contours'])],
+                    anchors={k: mix(v, b[n]['anchors'][k]) for k, v in a[n]['anchors'].items() if k in b[n]['anchors']})
             for n in a if n in b and [len(c) for c in a[n]['contours']] == [len(c) for c in b[n]['contours']]}
 
 
@@ -34,16 +35,34 @@ PAIR = {'Thin': ('Thin', 'Regular', 0.0), 'Regular': ('Regular', 'Heavy', 0.0),
 REACH = 0.35
 
 
+def anchor_names(name):
+    """The anchors a glyph has in every drawing, so all weights carry the same ones."""
+    sets = [set(DRAWN[m][name]['anchors']) for m in ('Thin', 'Regular', 'Heavy') if name in DRAWN[m]]
+    return sorted(set.intersection(*sets)) if sets else []
+
+
+def outline(master, name):
+    """A glyph's contours, then its anchors as one-node contours, so every change moves them too."""
+    g = DRAWN[master][name]
+    return ([[n[:] for n in c] for c in g['contours']] +
+            [[list(g['anchors'][a]) + ['anchor']] for a in anchor_names(name)])
+
+
 class G:
     def __init__(self, name, master='Regular'):
         self.name, self.master = name, master
-        self.c = copy.deepcopy(DRAWN[master][name]['contours'])
+        self.c = outline(master, name)
+        self.real = len(DRAWN[master][name]['contours'])   # the rest are anchors
+        self.anchors = anchor_names(name)
         self.offset = 0      # optical shift (original units) after centring
 
-    # geometry
+    def set_contours(self, contours):
+        self.c, self.real, self.anchors = contours, len(contours), []
+
+    # geometry (of the drawing; anchors never count)
     def nodes(self, idx=None):
         for i, c in enumerate(self.c):
-            if idx is None or i in idx:
+            if (i < self.real) if idx is None else (i in idx):
                 yield from c
 
     def bbox(self, idx=None):
@@ -108,8 +127,9 @@ class G:
         idx = set(range(len(self.c))) if idx is None else set(idx)
         lo, hi, t0 = PAIR[self.master]
         own = [[n[:] for n in c] for c in self.c]
-        light = own if lo == self.master else DRAWN[lo][self.name]['contours']
-        heavy = own if hi == self.master else DRAWN[hi][self.name]['contours']
+        light = own if lo == self.master else outline(lo, self.name)
+        heavy = own if hi == self.master else outline(hi, self.name)
+        drawn = [i for i in idx if i < self.real]
         s_lo, s_hi, s_own = STEM[lo], STEM[hi], STEM[self.master]
         def at(t):
             return [[l[0] + t * (h[0] - l[0]) for l, h in zip(lc, hc)] if i in idx else None
@@ -117,23 +137,28 @@ class G:
         t = t0
         for _ in range(12):
             xs = at(t)
-            allx = [x for c in xs if c for x in c]
+            allx = [x for i in drawn for x in xs[i]]
             k = sx if sx else target / (max(allx) - min(allx))
             t = min(max(t0, (s_own * keep / k - s_lo) / (s_hi - s_lo)), 1 + REACH)
         xs = at(t)
-        x0 = min(x for c in xs if c for x in c)
-        left = min(n[0] for i in idx for n in own[i])
+        x0 = min(x for i in drawn for x in xs[i])
+        left = min(n[0] for i in drawn for n in own[i])
         for i in idx:
             for n, x in zip(self.c[i], xs[i]):
                 n[0] = left + (x - x0) * k
         self.t = t
         return self
 
-    def final(self):
-        """Scale into the cell and centre the ink."""
+    def center_anchors(self, names=('top', 'bottom', 'center')):
         x0, x1, _, _ = self.bbox()
+        for i, a in enumerate(self.anchors):
+            if a in names: self.c[self.real + i][0][0] = (x0 + x1) / 2
+        return self
+
+    def final(self):
+        """Scale into the cell and centre the ink. The anchors land in self.placed."""
+        x0, x1, _, _ = self.bbox() if self.real else (300 / S, 300 / S, 0, 0)
         mid = (x0 + x1) / 2
-        out = []
-        for c in self.c:
-            out.append([(round((n[0] - mid + self.offset) * S + 300), round(n[1] * S), n[2]) for n in c])
-        return out
+        place = lambda n: ((n[0] - mid + self.offset) * S + 300, n[1] * S)
+        self.placed = {a: place(self.c[self.real + i][0]) for i, a in enumerate(self.anchors)}
+        return [[tuple(round(v) for v in place(n)) + (n[2],) for n in c] for c in self.c[:self.real]]
