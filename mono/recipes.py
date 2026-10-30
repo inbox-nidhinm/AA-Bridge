@@ -21,7 +21,8 @@ def l(g):
 
 @recipe('j')
 def j(g):
-    g.xmap([(54, -50), (94, 94)]); g.offset = -10
+    # only the top serif grows (to the i's length); the hook keeps its drawing
+    g.xmap([(54, -46), (94, 94)], idx=[0], above=400)
 
 @recipe('r')
 def r(g):
@@ -46,7 +47,8 @@ def I(g):
 
 @recipe('J')
 def J(g):
-    g.xmap([(262, 190), (342, 342), (529, 529), (582, 610)])
+    # only the top serif grows; the hook keeps its drawing
+    g.xmap([(262, 180), (342, 342), (529, 529), (582, 640)], idx=[0], above=600)
 
 @recipe('one')
 def one(g):

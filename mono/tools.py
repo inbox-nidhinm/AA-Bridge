@@ -34,8 +34,9 @@ class G:
         return x1 - x0
 
     # operations
-    def xmap(self, knots, idx=None):
-        """Piecewise-linear map of x (knots: [(old, new), ...]); slope 1 outside."""
+    def xmap(self, knots, idx=None, above=None):
+        """Piecewise-linear map of x (knots: [(old, new), ...]); slope 1 outside.
+        With above, only nodes at or above that height move."""
         knots = sorted(knots)
         def f(x):
             if x <= knots[0][0]: return x + knots[0][1] - knots[0][0]
@@ -44,7 +45,8 @@ class G:
                 if a <= x <= b: return fa + (x - a) * (fb - fa) / (b - a)
         for i, c in enumerate(self.c):
             if idx is None or i in idx:
-                for n in c: n[0] = f(n[0])
+                for n in c:
+                    if above is None or n[1] >= above: n[0] = f(n[0])
         return self
 
     def ymap(self, knots, idx=None):
