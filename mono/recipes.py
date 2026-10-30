@@ -96,8 +96,9 @@ def M(g):
         r.xmap([(950, 950), (1005, 975)], idx=[2, 6, 8, 5])
         r.shift(-d, idx=[2, 5, 6, 8])
     g.like_regular(legs, idx=range(1, 9))
-    g.condense(g.width([0]) - d, idx=[0], keep=0.85)
-    g.ymap([(0, 170), (700, 700)], idx=[0])
+    v = [0] + list(range(9, g.real))    # the V, and the fillets rounding its joints
+    g.condense(g.width([0]) - d, idx=v, measure=[0], keep=0.85)
+    g.ymap([(0, 170), (700, 700)], idx=v)
     g.center_anchors()
 
 CAP_TARGET = 610

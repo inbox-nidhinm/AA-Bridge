@@ -52,6 +52,7 @@ def make(name, style, done):
         else:
             gl = G(SOURCE.get(name, name), style)
             R.get(name, default)(gl)
+            gl.recut().refit()
             contours, anchors = gl.final(), gl.placed
         xs = [n[0] for c in contours for n in c]
         done[name] = (contours, anchors, (min(xs) + max(xs)) / 2 if xs else 300)
@@ -72,7 +73,7 @@ def master(style):
     i.postscriptIsFixedPitch = True
     i.openTypeOS2Panose = [2, 0, 5, 9, 0, 0, 0, 0, 0, 0]
     i.openTypeOS2WeightClass = WEIGHTS[style]
-    i.versionMajor, i.versionMinor = 0, 300
+    i.versionMajor, i.versionMinor = 0, 301
     i.copyright = 'Copyright 2026 The Trupeer Slab Mono Project Authors. Drawn from Trupeer Slab (Montagu Slab, copyright 2020 The Montagu Slab Project Authors).'
     i.openTypeNameLicense = 'This Font Software is licensed under the SIL Open Font License, Version 1.1.'
     i.openTypeNameLicenseURL = 'https://openfontlicense.org'

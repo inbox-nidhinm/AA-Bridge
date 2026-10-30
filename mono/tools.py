@@ -1,6 +1,8 @@
 """Working on the original Trupeer Slab drawings (its 16pt optical size), one weight at a time.
 Everything here is in the original's units; the build scales by S into the 600-unit cell."""
 import copy
+import math
+import fillets
 from source import load
 
 # The weights the family is built from, and the layers of the original they come from.
@@ -46,6 +48,61 @@ def outline(master, name):
     g = DRAWN[master][name]
     return ([[n[:] for n in c] for c in g['contours']] +
             [[list(g['anchors'][a]) + ['anchor']] for a in anchor_names(name)])
+
+
+# The original cuts the points of A M N V W v w at PEN (rising to the right): the corner on
+# the overshoot sits on one stroke edge, the other corner where the cut meets the other edge.
+PEN = math.radians(30)
+
+
+def find_cuts(contours):
+    """The original's angled cuts in a drawing: for each, the nodes on its two corners and
+    between them (as (contour, node) pairs), and the node that ends the stroke edge the
+    corner off the overshoot sits on."""
+    tan = math.tan(PEN)
+    on = [(ci, ni) for ci, c in enumerate(contours) for ni, n in enumerate(c) if n[2] != 'offcurve']
+    at = lambda r: contours[r[0]][r[1]]
+    spans = {}       # each cut's line (its height at x = 0) -> its x extent
+    for ci, c in enumerate(contours):
+        for ni, n in enumerate(c):
+            m = c[(ni + 1) % len(c)]
+            if n[2] == 'offcurve' or m[2] != 'line' or abs(m[0] - n[0]) < 5: continue
+            if abs(math.degrees(math.atan2(m[1] - n[1], m[0] - n[0])) % 180 - 30) > 0.5: continue
+            if 150 < min(n[1], m[1]) and max(n[1], m[1]) < 550: continue     # points only
+            k = n[1] - n[0] * tan
+            key = next((k2 for k2 in spans if abs(k - k2) < 1), k)
+            x0, x1 = spans.get(key, (math.inf, -math.inf))
+            spans[key] = (min(x0, n[0], m[0]), max(x1, n[0], m[0]))
+    cuts = []
+    for k, (x0, x1) in spans.items():
+        nodes = [r for r in on if abs(at(r)[1] - at(r)[0] * tan - k) * math.cos(PEN) < 0.75
+                 and x0 - 0.75 <= at(r)[0] <= x1 + 0.75]
+        top = at(nodes[0])[1] > 300
+        lo = [r for r in nodes if abs(at(r)[0] - x0) < 0.75]
+        hi = [r for r in nodes if abs(at(r)[0] - x1) < 0.75]
+        mid = [(r, (at(r)[0] - x0) / (x1 - x0)) for r in nodes if r not in lo and r not in hi]
+
+        def edge(corner, side):
+            # the stroke edge leaving the corner on the outside of the point
+            best = None
+            for ci, ni in corner:
+                c = contours[ci]
+                for nb in ((ci, (ni - 1) % len(c)), (ci, (ni + 1) % len(c))):
+                    p, q = at((ci, ni)), at(nb)
+                    dx, dy = q[0] - p[0], q[1] - p[1]
+                    if q[2] == 'offcurve' or abs(q[1] - q[0] * tan - k) < 1: continue
+                    if (dy < 20) if not top else (dy > -20): continue
+                    if dx * side < -0.5: continue          # must open away from the point
+                    s = dx / abs(dy) * side
+                    if best is None or s > best[0]: best = (s, nb)
+            return best and best[1]
+        # bottom points keep their low (left) corner and slide the right one; the A's apex
+        # keeps its high (right) corner and slides the left one
+        moving, side = (lo, -1) if top else (hi, 1)
+        nb = edge(moving, side)
+        if lo and hi and nb:
+            cuts.append(dict(fixed=hi if top else lo, moving=moving, edge=nb, mid=mid, lo=lo, hi=hi))
+    return cuts
 
 
 class G:
@@ -121,15 +178,16 @@ class G:
         self.offset = r.offset
         return self
 
-    def condense(self, target=None, sx=None, idx=None, keep=1.0):
+    def condense(self, target=None, sx=None, idx=None, keep=1.0, measure=None):
         """Narrow by moving x towards a heavier drawing first, so stems keep their weight
-        (times keep) while counters and serifs get narrower."""
+        (times keep) while counters and serifs get narrower. With measure, only those
+        contours set the width and left edge; the rest of idx follows them."""
         idx = set(range(len(self.c))) if idx is None else set(idx)
         lo, hi, t0 = PAIR[self.master]
         own = [[n[:] for n in c] for c in self.c]
         light = own if lo == self.master else outline(lo, self.name)
         heavy = own if hi == self.master else outline(hi, self.name)
-        drawn = [i for i in idx if i < self.real]
+        drawn = [i for i in (idx if measure is None else measure) if i < self.real]
         s_lo, s_hi, s_own = STEM[lo], STEM[hi], STEM[self.master]
         def at(t):
             return [[l[0] + t * (h[0] - l[0]) for l, h in zip(lc, hc)] if i in idx else None
@@ -147,6 +205,29 @@ class G:
             for n, x in zip(self.c[i], xs[i]):
                 n[0] = left + (x - x0) * k
         self.t = t
+        return self
+
+    def refit(self):
+        """After narrowing, lay the original's joint fillets back into their corners."""
+        if hasattr(self, 't'):
+            fillets.refit(self.c, DRAWN[self.master][self.name]['contours'], self.real)
+        return self
+
+    def recut(self):
+        """Narrowing a letter steepens the original's cut on its point, so it is cut again at
+        PEN: the corner on the overshoot stays, the other slides along its stroke edge."""
+        drawing = DRAWN[self.master][self.name]['contours']
+        if self.real != len(drawing): return self
+        d = (math.cos(PEN), math.sin(PEN))
+        for cut in find_cuts(drawing):
+            at = lambda r: self.c[r[0]][r[1]]
+            p, a, b = at(cut['fixed'][0]), at(cut['moving'][0]), at(cut['edge'])
+            ex, ey = b[0] - a[0], b[1] - a[1]
+            t = ((a[0] - p[0]) * ey - (a[1] - p[1]) * ex) / (d[0] * ey - d[1] * ex)
+            new = (p[0] + d[0] * t, p[1] + d[1] * t)
+            for r in cut['moving']: at(r)[:2] = new
+            l, h = at(cut['lo'][0]), at(cut['hi'][0])
+            for r, s in cut['mid']: at(r)[:2] = [l[0] + s * (h[0] - l[0]), l[1] + s * (h[1] - l[1])]
         return self
 
     def center_anchors(self, names=('top', 'bottom', 'center')):
