@@ -17,7 +17,3 @@ Each family folder has the same layout:
 - `fonts/variable/`: one file holding every weight (and, where there is one, every optical size).
 - `fonts/webfonts/`: the variable font as WOFF2, for websites.
 - `sources/`: the Glyphs source files. The monos are built from their parent's source by the scripts in their folder (`python build.py`), and the serifs by `serif/tools/serifize.py` (see `serif/README.md`).
-
-## History
-
-This repo joins what used to be three: Trupeer Slab (with Trupeer Slab Mono), Trupeer Sans (with Trupeer Sans Mono) and Trupeer Serif (bracketed and Wedge), renamed AA Bridge on 2026-10-31. The Slab and Sans commits are kept in full; `git log` shows them as the two merged branches near the start.
