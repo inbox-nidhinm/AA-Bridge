@@ -31,11 +31,11 @@ Each change is a recipe in `recipes.py`. A glyph without a recipe is used as dra
 
 ## Alternates
 
-- **Stylistic Set 2:** the original's plain zero
-- **Stylistic Set 3:** an l with the t's curled tail in place of a foot
-- **Stylistic Set 4:** an r without a foot, with a longer arm
+- **Stylistic Set 4:** the original's plain zero
+- **Stylistic Set 5:** an l with the t's curled tail in place of a foot
+- **Stylistic Set 6:** an r without a foot, with a longer arm
 
-Also kept from the original: `ccmp`, `locl` (Turkish i, Romanian comma accents, Catalan middle dot), `frac`, `numr`, `dnom`, `sups`, `subs`, `sinf`, `ordn`, `case`, and Stylistic Set 1 (the tilted o). There are no ligatures, and combining accents take no room.
+Also kept from the original: `ccmp`, `locl` (Turkish i, Romanian comma accents, Catalan middle dot), `frac`, `numr`, `dnom`, `sups`, `subs`, `sinf`, `ordn`, `case`, and Stylistic Sets 1 to 3 (the tilted o, and the original's other a and g). There are no ligatures, and combining accents take no room.
 
 ## Building
 

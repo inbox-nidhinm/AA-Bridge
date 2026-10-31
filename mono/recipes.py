@@ -101,7 +101,7 @@ def l(g):
     foot(g, 0)
     g.offset = 8
 
-@alternate('l.tail', 'l', 'ss03')
+@alternate('l.tail', 'l', 'ss05')
 def l_tail(g):
     # the t's curled tail under a full-height stem
     t, tail, rest = _tail(g.master)
@@ -121,7 +121,7 @@ def r(g):
     flag(g, 0)
     foot(g, 0)
 
-@alternate('r.plain', 'r', 'ss04')
+@alternate('r.plain', 'r', 'ss06')
 def r_plain(g):
     # no foot: a longer arm and a flag
     g.like_regular(lambda r: r.xmap([(220, 220), (390, 470)], idx=[1]))
@@ -196,7 +196,7 @@ def underscore(g):
 
 # Code needs these to be told apart: the slashed zero, and straight quotes drawn as
 # upright wedges in place of the curly ones. The slashed and plain zeros swap places,
-# so the plain one is the alternate (Stylistic Set 2, see build.py).
+# so the plain one is the alternate (Stylistic Set 4, see build.py).
 SOURCE = {k: v for k, v in {'zero': 'zero.zero', 'zero.zero': 'zero',
                             'zero.lf': 'zero.lf.zero', 'zero.lf.zero': 'zero.lf'}.items() if k in REG and v in REG}
 

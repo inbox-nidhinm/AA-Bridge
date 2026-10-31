@@ -21,7 +21,8 @@ AXIS_MAP = [(100, 100), (200, 180), (300, 260), (400, 378), (500, 492), (600, 58
 WEIGHTS = {'Thin': 100, 'ExtraLight': 200, 'Light': 300, 'Regular': 400, 'Medium': 500, 'SemiBold': 600, 'Bold': 700}
 MASTER_AT = {'Thin': 100, 'Regular': 378, 'Bold': 700}
 X_HEIGHT = {'Thin': 517, 'Regular': 529, 'Bold': 539}
-FEATURE_NAMES = {'ss03': 'Curled-tail l', 'ss04': 'r without a foot'}
+FEATURE_NAMES = {'ss05': 'Curled-tail l', 'ss06': 'r without a foot'}
+ZERO_SET = 'ss04'      # the original uses ss01 to ss03 (tilted o, other a, other g)
 
 # The original's OpenType features and glyph categories, as glyphsLib writes them
 _ORIGINAL = glyphsLib.to_designspace(glyphsLib.GSFont(GLYPHS_FILE), minimal=True).sources[0].font
@@ -39,8 +40,8 @@ def features():
     # the slashed zero is the default here, so the original's slashed-zero switch becomes
     # a set that gives the plain one back
     fea = fea.replace('feature zero;\n', '')
-    fea = fea.replace('feature zero {', 'feature ss02 {\nfeatureNames { name "Plain zero"; };')
-    fea = fea.replace('} zero;', '} ss02;')
+    fea = fea.replace('feature zero {', f'feature {ZERO_SET} {{\nfeatureNames {{ name "Plain zero"; }};')
+    fea = fea.replace('} zero;', f'}} {ZERO_SET};')
     # the mono's own alternates, one stylistic set each
     for feat in sorted({a[2] for a in ALT.values()}):
         subs = ''.join(f'sub {base} by {name};\n' for name, (base, _, ft) in ALT.items() if ft == feat)

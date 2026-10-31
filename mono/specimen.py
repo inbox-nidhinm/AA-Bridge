@@ -103,13 +103,13 @@ def sheet(out):
         draw_text(img, L, y + size * 0.8, 'Illegal1 = O0o; minimum(will, fill)', path, size)
         y += size * 1.15
 
-    label(img, L, y, 'Defaults: l and r with flags and feet. Below, the alternates: a curled-tail l (ss03) and a footless r (ss04)')
+    label(img, L, y, 'Defaults: l and r with flags and feet. Below, the alternates: a curled-tail l (ss05) and a footless r (ss06)')
     y += 36
     size = 76
     line = 'll ill fill  rr err array'
     p = draw_text(img, L, y + size * 0.8, line, MONO['Regular'], size)
     y += size * 1.1
-    draw_text(img, L, y + size * 0.8, line, MONO['Regular'], size, features={'ss03': True, 'ss04': True},
+    draw_text(img, L, y + size * 0.8, line, MONO['Regular'], size, features={'ss05': True, 'ss06': True},
               colors={i: ACCENT for i, ch in enumerate(line) if ch in 'lr'})
     y += size * 1.2
 
