@@ -1,4 +1,4 @@
-"""Working on the original Trupeer Slab drawings (its 16pt optical size), one weight at a time.
+"""Working on the original AA Bridge Slab drawings (its 16pt optical size), one weight at a time.
 Everything here is in the original's units; the build scales by S into the 600-unit cell."""
 import copy
 import math

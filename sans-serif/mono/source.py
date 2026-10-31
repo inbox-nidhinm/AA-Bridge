@@ -1,11 +1,11 @@
-"""Reads one layer of the original Trupeer Sans source as plain outlines:
+"""Reads one layer of the original AA Bridge Sans source as plain outlines:
 name -> {width, unicode, contours, anchors}, each contour a list of [x, y, type] nodes
 (line, curve, offcurve, as Glyphs stores them), with components drawn in place,
 and anchors as {name: [x, y]}."""
 import os
 import glyphsLib
 
-SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'sources', 'TrupeerSans.glyphs')
+SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'sources', 'AABridgeSans.glyphs')
 _font = None
 
 

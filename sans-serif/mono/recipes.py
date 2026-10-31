@@ -2,7 +2,7 @@
 is used as drawn, centred, unless it is too wide (see default). Accented letters are not
 listed: they are their base letter's result with the accents put back (see compose.py).
 
-Trupeer Sans has no serifs to lengthen, so the narrow letters get new ones: plain
+AA Bridge Sans has no serifs to lengthen, so the narrow letters get new ones: plain
 rectangles as thick as the font's own crossbars (the f's bar for lowercase, the T's for
 capitals), as in IBM Plex Mono and JetBrains Mono. Their ends sit the same distance from
 the stem's centre in every weight, so every weight fills the slot the same way."""
@@ -96,7 +96,7 @@ def _tail(master):
 
 @recipe('l')
 def l(g):
-    # a flag and a foot, as on the i (and as Trupeer Slab Mono's l)
+    # a flag and a foot, as on the i (and as AA Bridge Slab Mono's l)
     flag(g, 0)
     foot(g, 0)
     g.offset = 8

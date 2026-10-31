@@ -1,4 +1,4 @@
-"""Make Trupeer Serif (bracketed) or Trupeer Serif Wedge from Trupeer Slab's source.
+"""Make AA Bridge Serif (bracketed) or AA Bridge Serif Wedge from AA Bridge Slab's source.
 
 usage: serifize.py SRC.glyphs OUT.glyphs [--style bracketed|wedge] [--family NAME]
 
@@ -8,7 +8,7 @@ angled wedges for lowercase head serifs, and beaks and spurs that end in a
 near point with a straighter, more triangular inner edge. Everything else below
 is shared, including the unchanged reach (so spacing and kerning match the Slab).
 
-1. Slabs. A slab in Trupeer Slab is a run drawn into a stem contour:
+1. Slabs. A slab in AA Bridge Slab is a run drawn into a stem contour:
    baseline -> Cbase (outer bottom corner) -> Ctop (outer top corner) -> P (where
    the slab's top meets the stem) -> stem. Each run is replaced by a bracketed
    serif: half the slab's thickness, the same reach, a flat end, and a long
@@ -38,7 +38,7 @@ ap.add_argument('--style', choices=['bracketed', 'wedge'], default='bracketed')
 ap.add_argument('--family', default=None)
 args = ap.parse_args()
 if args.family is None:
-    args.family = {'bracketed': 'Trupeer Serif', 'wedge': 'Trupeer Serif Wedge'}[args.style]
+    args.family = {'bracketed': 'AA Bridge Serif', 'wedge': 'AA Bridge Serif Wedge'}[args.style]
 
 # serif proportions, in units of the slab's own thickness t0 / reach L0
 T_RATIO = 0.5        # serif thickness

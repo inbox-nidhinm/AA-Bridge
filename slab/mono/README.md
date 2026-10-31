@@ -1,17 +1,17 @@
-# Trupeer Slab Mono
+# AA Bridge Slab Mono
 
-A monospaced companion to Trupeer Slab. Every character takes the same 600-unit slot.
+A monospaced companion to AA Bridge Slab. Every character takes the same 600-unit slot.
 
-Seven weights, Thin to Bold, with the original's character set: 616 of its 618 characters (676 glyphs), covering the Latin languages Trupeer Slab covers, Vietnamese included. The two left out are the fi and fl ligatures.
+Seven weights, Thin to Bold, with the original's character set: 616 of its 618 characters (676 glyphs), covering the Latin languages AA Bridge Slab covers, Vietnamese included. The two left out are the fi and fl ligatures.
 
-- `fonts/variable/TrupeerSlabMono[wght].ttf`: one file with every weight from 100 to 700
+- `fonts/variable/AABridgeSlabMono[wght].ttf`: one file with every weight from 100 to 700
 - `fonts/ttf` and `fonts/otf`: Thin, ExtraLight, Light, Regular, Medium, SemiBold and Bold
 
-![The original Trupeer Slab in grey above Trupeer Slab Mono, the seven weights, then lines of code](specimen.png)
+![The original AA Bridge Slab in grey above AA Bridge Slab Mono, the seven weights, then lines of code](specimen.png)
 
 ## How it is made
 
-The glyphs are the original's own drawings (the 16pt optical size in `../sources/TrupeerSlab.glyphs`), not new ones. The family is built from three masters, and the weights between them are interpolated:
+The glyphs are the original's own drawings (the 16pt optical size in `../sources/AABridgeSlab.glyphs`), not new ones. The family is built from three masters, and the weights between them are interpolated:
 
 - **Thin** from the original's Thin.
 - **Regular** from the original's Regular.
@@ -50,4 +50,4 @@ This draws the three masters into `build/` (UFOs and a designspace), then writes
 
 ## Licence
 
-SIL Open Font License 1.1, as for Trupeer Slab (see `../OFL.txt`).
+SIL Open Font License 1.1, as for AA Bridge Slab (see `../OFL.txt`).

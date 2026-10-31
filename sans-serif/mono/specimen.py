@@ -8,11 +8,11 @@ import uharfbuzz as hb
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CODE = HERE.split('/Trupeer Sans/')[0]     # the folder holding Trupeer Sans and Trupeer Slab Mono
+REPO = os.path.dirname(os.path.dirname(HERE))     # the AA Bridge repo: sans-serif/, slab/, serif/
 PREVIEW = os.path.join(HERE, 'build', 'preview')
-MONO = {w: os.path.join(PREVIEW, f'TrupeerSansMono-{w}.ttf') for w in ('Thin', 'Regular', 'Bold')}
-SANS = {w: os.path.join(CODE, 'Trupeer Sans', 'fonts', 'ttf', f'TrupeerSans16pt-{w}.ttf') for w in ('Thin', 'Regular', 'Bold')}
-SLAB_MONO = {w: os.path.join(CODE, 'Trupeer Slab Mono', 'mono', 'fonts', 'ttf', f'TrupeerSlabMono-{w}.ttf')
+MONO = {w: os.path.join(PREVIEW, f'AABridgeSansMono-{w}.ttf') for w in ('Thin', 'Regular', 'Bold')}
+SANS = {w: os.path.join(REPO, 'sans-serif', 'fonts', 'ttf', f'AABridgeSans16pt-{w}.ttf') for w in ('Thin', 'Regular', 'Bold')}
+SLAB_MONO = {w: os.path.join(REPO, 'slab', 'mono', 'fonts', 'ttf', f'AABridgeSlabMono-{w}.ttf')
              for w in ('Thin', 'Regular', 'Bold')}
 
 INK, GREY, LABEL, ACCENT = (17, 17, 17), (150, 150, 150), (120, 120, 120), (229, 72, 77)
@@ -60,7 +60,7 @@ def sheet(out):
     L = 40
     y = 30
 
-    label(img, L, y, 'Trupeer Sans Mono, Regular. The letters that change most to fill the slot, with their slots shown')
+    label(img, L, y, 'AA Bridge Sans Mono, Regular. The letters that change most to fill the slot, with their slots shown')
     y += 40
     size = 190
     text = 'iljrf1IJ'
@@ -71,14 +71,14 @@ def sheet(out):
     draw_text(img, L, y + size * 0.8, text, MONO['Regular'], size)
     y += size * 1.0 + 20
 
-    label(img, L, y, 'The same letters in Trupeer Sans (grey) and Trupeer Slab Mono, for reference')
+    label(img, L, y, 'The same letters in AA Bridge Sans (grey) and AA Bridge Slab Mono, for reference')
     y += 40
     size = 120
     p = draw_text(img, L, y + size * 0.8, text, SANS['Regular'], size * 0.87, GREY)
     draw_text(img, p + 80, y + size * 0.8, text, SLAB_MONO['Regular'], size)
     y += size + 30
 
-    label(img, L, y, 'Trupeer Sans (grey, set at 87% so the x-heights match) above Trupeer Sans Mono')
+    label(img, L, y, 'AA Bridge Sans (grey, set at 87% so the x-heights match) above AA Bridge Sans Mono')
     y += 40
     size = 84
     for w in ('Thin', 'Regular', 'Bold'):
@@ -96,7 +96,7 @@ def sheet(out):
             y += size * 1.12
         y += 10
 
-    label(img, L, y, 'Trupeer Sans Mono above Trupeer Slab Mono: the same slot, x-height and capitals')
+    label(img, L, y, 'AA Bridge Sans Mono above AA Bridge Slab Mono: the same slot, x-height and capitals')
     y += 36
     size = 58
     for path in (MONO['Regular'], SLAB_MONO['Regular']):

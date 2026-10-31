@@ -1,4 +1,4 @@
-"""Builds Trupeer Slab Mono, Thin to Bold: python build.py
+"""Builds AA Bridge Slab Mono, Thin to Bold: python build.py
 
 Draws the Thin, Regular and Bold masters into build/ as UFOs with a designspace, then
 makes the variable font (fonts/variable) and seven static weights (fonts/ttf, fonts/otf)."""
@@ -14,7 +14,7 @@ import compose
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILD = os.path.join(HERE, 'build')
 FONTS = os.path.join(HERE, 'fonts')
-FAMILY = 'Trupeer Slab Mono'
+FAMILY = 'AA Bridge Slab Mono'
 
 # The original's weight axis: user value -> where the drawings sit (its Regular is drawn at 378)
 AXIS_MAP = [(100, 100), (200, 180), (300, 260), (400, 378), (500, 492), (600, 588), (700, 700)]
@@ -74,7 +74,7 @@ def master(style):
     i.openTypeOS2Panose = [2, 0, 5, 9, 0, 0, 0, 0, 0, 0]
     i.openTypeOS2WeightClass = WEIGHTS[style]
     i.versionMajor, i.versionMinor = 0, 301
-    i.copyright = 'Copyright 2026 The Trupeer Slab Mono Project Authors. Drawn from Trupeer Slab (Montagu Slab, copyright 2020 The Montagu Slab Project Authors).'
+    i.copyright = 'Copyright 2026 The AA Bridge Slab Mono Project Authors. Drawn from AA Bridge Slab (Montagu Slab, copyright 2020 The Montagu Slab Project Authors).'
     i.openTypeNameLicense = 'This Font Software is licensed under the SIL Open Font License, Version 1.1.'
     i.openTypeNameLicenseURL = 'https://openfontlicense.org'
 
@@ -120,7 +120,7 @@ def main():
     ax.map = AXIS_MAP
     doc.addAxis(ax)
     for style in MASTERS:
-        path = os.path.join(BUILD, f'TrupeerSlabMono-{style}.ufo')
+        path = os.path.join(BUILD, f'AABridgeSlabMono-{style}.ufo')
         master(style).save(path, overwrite=True)
         s = SourceDescriptor()
         s.path, s.familyName, s.styleName = path, FAMILY, style
@@ -130,14 +130,14 @@ def main():
         inst = InstanceDescriptor()
         inst.familyName, inst.styleName = FAMILY, style
         inst.location = {'Weight': dict(AXIS_MAP)[w]}
-        inst.filename = f'instances/TrupeerSlabMono-{style}.ufo'
+        inst.filename = f'instances/AABridgeSlabMono-{style}.ufo'
         doc.addInstance(inst)
-    ds = os.path.join(BUILD, 'TrupeerSlabMono.designspace')
+    ds = os.path.join(BUILD, 'AABridgeSlabMono.designspace')
     doc.write(ds)
 
     fontmake = [sys.executable, '-m', 'fontmake', '-m', ds, '--overlaps-backend', 'pathops']
     subprocess.run(fontmake + ['-o', 'variable', '--output-path',
-                               os.path.join(FONTS, 'variable', 'TrupeerSlabMono[wght].ttf')], check=True)
+                               os.path.join(FONTS, 'variable', 'AABridgeSlabMono[wght].ttf')], check=True)
     for fmt in ('ttf', 'otf'):
         subprocess.run(fontmake + ['-i', '-o', fmt, '--output-dir', os.path.join(FONTS, fmt)], check=True)
 
