@@ -103,7 +103,7 @@ def sheet(out):
         draw_text(img, L, y + size * 0.8, 'Illegal1 = O0o; minimum(will, fill)', path, size)
         y += size * 1.15
 
-    label(img, L, y, 'Options. Default l (curled tail) and r (with a foot), then the alternates: a slab-footed l and a footless r')
+    label(img, L, y, 'Defaults: l and r with flags and feet. Below, the alternates: a curled-tail l (ss03) and a footless r (ss04)')
     y += 36
     size = 76
     line = 'll ill fill  rr err array'

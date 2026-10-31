@@ -20,11 +20,11 @@ In every weight:
 - **Scale.** The original is set at 87% in the slot (`S` in `tools.py`), the same as Trupeer Slab Mono. Most lowercase, the figures and most punctuation are used as drawn, only centred.
 - **Narrow letters get new serifs.** Trupeer Sans has no slabs to lengthen, so i, j, r, l, I, J and 1 get plain rectangles as thick as the font's own crossbars (the f's bar for lowercase, the T's top for capitals), as in IBM Plex Mono and JetBrains Mono. Their ends sit the same distance from the stem's centre in every weight (`FLAG`, `FOOT` and `CAPFOOT` in `recipes.py`):
   - i: a flag at the x-height and a foot; j: a flag, the hook as drawn; r: a flag, a foot and a slightly longer arm
-  - l: a flag, and the t's own curled tail in place of a foot, so l, I and 1 never look alike in code
+  - l: a flag and a foot, as on the i and as in Trupeer Slab Mono
   - I: bars top and bottom; 1: a base; J: a bar at the top; f: a crossbar reaching as far left as right
 - **Wide letters** (m, w, M, W, most capitals, &, @, %) get narrower counters while their stems keep their weight (`G.condense`). M keeps upright legs with the point of its V lifted off the baseline.
 - **For code:** the slashed zero is the default 0, ' and " are straight wedges, / and \ run from below the baseline to above the capitals, and the underscore fills the slot.
-- **Accented letters** are their base letter's result with the accents put back against the base's anchors (`compose.py`). One whose accent would hang off the slot (the horn of ơ and ư, the caron of ď, the bars of Đ, Ł and Ħ) is moved back to the slot's centre, or drawn whole and narrowed when it does not fit (`settle` in `build.py`). ŀ's middle dot is raised over the l's tail, which rises where the source puts the dot.
+- **Accented letters** are their base letter's result with the accents put back against the base's anchors (`compose.py`). One whose accent would hang off the slot (the horn of ơ and ư, the caron of ď, the bars of Đ, Ł and Ħ) is moved back to the slot's centre, or drawn whole and narrowed when it does not fit (`settle` in `build.py`).
 - **Everything else** (Æ, Œ, ŋ, ð, currency, symbols, small figures, fractions, the LJ, NJ and DŽ digraphs) is used as drawn, or narrowed to fit the slot when too wide.
 
 Each change is a recipe in `recipes.py`. A glyph without a recipe is used as drawn.
@@ -32,7 +32,7 @@ Each change is a recipe in `recipes.py`. A glyph without a recipe is used as dra
 ## Alternates
 
 - **Stylistic Set 2:** the original's plain zero
-- **Stylistic Set 3:** a slab-footed l, like Trupeer Slab Mono's
+- **Stylistic Set 3:** an l with the t's curled tail in place of a foot
 - **Stylistic Set 4:** an r without a foot, with a longer arm
 
 Also kept from the original: `ccmp`, `locl` (Turkish i, Romanian comma accents, Catalan middle dot), `frac`, `numr`, `dnom`, `sups`, `subs`, `sinf`, `ordn`, `case`, and Stylistic Set 1 (the tilted o). There are no ligatures, and combining accents take no room.

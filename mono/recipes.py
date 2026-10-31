@@ -96,7 +96,14 @@ def _tail(master):
 
 @recipe('l')
 def l(g):
-    # the t's curled tail under a full-height stem, so l, I and 1 never look alike
+    # a flag and a foot, as on the i (and as Trupeer Slab Mono's l)
+    flag(g, 0)
+    foot(g, 0)
+    g.offset = 8
+
+@alternate('l.tail', 'l', 'ss03')
+def l_tail(g):
+    # the t's curled tail under a full-height stem
     t, tail, rest = _tail(g.master)
     x0, x1, cx, _, top = stem(g, 0)
     right = t[11][0]                      # the t's stem, right side
@@ -106,12 +113,6 @@ def l(g):
     g.c[0] = [[x + dx, y, k] for x, y, k in new]
     flag(g, at=(x0, x1, top))
     g.offset = -20
-
-@alternate('l.slab', 'l', 'ss03')
-def l_slab(g):
-    flag(g, 0)
-    foot(g, 0)
-    g.offset = 8
 
 @recipe('r')
 def r(g):

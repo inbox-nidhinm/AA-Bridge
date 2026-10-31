@@ -6,7 +6,7 @@ import os, re, subprocess, sys
 import glyphsLib, ufoLib2
 from ufoLib2.objects import Anchor
 from fontTools.designspaceLib import DesignSpaceDocument, AxisDescriptor, SourceDescriptor, InstanceDescriptor
-from tools import G, REG, S, MASTERS
+from tools import G, REG, S, STEM, MASTERS
 from recipes import R, ALT, SOURCE, default
 from source import SOURCE as GLYPHS_FILE
 import compose
@@ -21,7 +21,7 @@ AXIS_MAP = [(100, 100), (200, 180), (300, 260), (400, 378), (500, 492), (600, 58
 WEIGHTS = {'Thin': 100, 'ExtraLight': 200, 'Light': 300, 'Regular': 400, 'Medium': 500, 'SemiBold': 600, 'Bold': 700}
 MASTER_AT = {'Thin': 100, 'Regular': 378, 'Bold': 700}
 X_HEIGHT = {'Thin': 517, 'Regular': 529, 'Bold': 539}
-FEATURE_NAMES = {'ss03': 'Slab-footed l', 'ss04': 'r without a foot'}
+FEATURE_NAMES = {'ss03': 'Curled-tail l', 'ss04': 'r without a foot'}
 
 # The original's OpenType features and glyph categories, as glyphsLib writes them
 _ORIGINAL = glyphsLib.to_designspace(glyphsLib.GSFont(GLYPHS_FILE), minimal=True).sources[0].font
@@ -69,14 +69,15 @@ def settle(name, style, contours, anchors):
 
 
 def ldot(contours, n, style):
-    """ŀ: the l's curled tail rises where the source puts the middle dot, so the dot goes up
-    to two thirds of the x-height, over the tail's bowl."""
+    """ŀ: the source sets the middle dot close to its narrow l; here it keeps a gap of 70%
+    of its own width from the stem, so it never touches in the heavier weights."""
     base, dots = contours[:n], contours[n:]
     xs = [p[0] for c in base for p in c]
-    dx, dy = [p[0] for c in dots for p in c], [p[1] for c in dots for p in c]
-    cx, cy = (min(dx) + max(dx)) / 2, (min(dy) + max(dy)) / 2
-    tx, ty = min(xs) + 0.74 * (max(xs) - min(xs)), 0.68 * X_HEIGHT[style] * S
-    return base + [[(round(x + tx - cx), round(y + ty - cy), t) for x, y, t in c] for c in dots]
+    dx = [p[0] for c in dots for p in c]
+    w = max(dx) - min(dx)
+    target = (min(xs) + max(xs)) / 2 + STEM[style] * S / 2 + w * (0.7 + 0.5)
+    shift = round(target - (min(dx) + max(dx)) / 2)
+    return base + [[(x + shift, y, t) for x, y, t in c] for c in dots]
 
 AFTER = {'ldot': ldot}
 
