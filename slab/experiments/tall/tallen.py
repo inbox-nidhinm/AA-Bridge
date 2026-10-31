@@ -152,69 +152,227 @@ def closest(pts, p, steps=200):
     return t0, math.dist(p, bez(pts, t0)[0])
 
 
-def find_joins(layer, tol=0.75):
-    """Nodes of one contour that sit on an edge of another contour (where an
-    overlapping piece such as a bracket or serif meets a stroke):
-    [(path i, node n, path j, segment, t, handle-follows-edge)]"""
-    joins = []
+ON_EDGE = 0.75  # units: a node this close to another piece's edge is on it
+JOIN = 12       # units: a node this far inside another piece stays tied to its edge
+
+
+def _area(pts):
+    return sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1])) / 2
+
+
+def _normal(tg):
+    L = math.hypot(*tg) or 1
+    return -tg[1] / L, tg[0] / L
+
+
+def edge_y(pts, x, t0):
+    """(t, y, tangent) where the edge crosses the upright line at x, nearest
+    parameter t0; None where the edge runs (nearly) upright there, because
+    a node's x never changes and an upright edge needs no correction."""
+    best = None
+    steps = 64
+    xs = [bez(pts, k / steps)[0][0] for k in range(steps + 1)]
+    for k in range(steps):
+        a, b = xs[k] - x, xs[k + 1] - x
+        if a == 0 or a * b < 0 or (k == steps - 1 and b == 0):
+            lo, hi = k / steps, (k + 1) / steps
+            for _ in range(40):
+                mid = (lo + hi) / 2
+                if (bez(pts, lo)[0][0] - x) * (bez(pts, mid)[0][0] - x) <= 0:
+                    hi = mid
+                else:
+                    lo = mid
+            t = (lo + hi) / 2
+            if best is None or abs(t - t0) < abs(best - t0):
+                best = t
+    if best is None:
+        return None
+    (_, y), tg = bez(pts, best)
+    if abs(tg[0]) < 0.1 * math.hypot(*tg):
+        return None
+    return best, y, tg
+
+
+def find_joins(layer, tol=JOIN):
+    """Nodes of one piece drawn on an edge of another piece (within ON_EDGE),
+    or inside a bigger piece within `tol` units of its edge: where a bracket,
+    serif or crotch wedge meets a stroke. The method never changes a node's
+    x, only its height, so pieces can only drift apart vertically: each such
+    node is recorded with its drawn height above or below the edge at its
+    own x, and gets exactly that back after the move. Upright edges need
+    nothing. The node next to a join at a bracket tip is tied the same way.
+    [(path i, node n, path j, segment, t, height offset, handle-follows-edge, tips)]"""
+    found = {}
+    corners = []
     paths = list(layer.paths)
+    # every segment once, with its control-point box grown by tol (a curve
+    # lies inside its control points, so a node outside the box is not near it)
+    segs = []
+    for q in paths:
+        row = []
+        for seg in segments(q):
+            pts = seg_pts(q, seg)
+            xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+            row.append((seg, pts, (min(xs) - tol, min(ys) - tol, max(xs) + tol, max(ys) + tol)))
+        segs.append(row)
+    on_nodes = [{(n.position.x, n.position.y) for n in q.nodes if n.type != 'offcurve'} for q in paths]
+    # which side of each contour is ink: left of travel when it runs anticlockwise
+    areas = [_area([(n.position.x, n.position.y) for n in q.nodes]) for q in paths]
+    ink_left = [a > 0 for a in areas]
+
+    def tie(i, n, j, seg, pts, t, nodes, tips=True):
+        pos = (nodes[n].position.x, nodes[n].position.y)
+        hit = edge_y(pts, pos[0], t)
+        if hit is None:
+            return
+        t, y, tg = hit
+        follows = []
+        for nb in (nodes[n - 1], nodes[(n + 1) % len(nodes)]):
+            if nb.type == 'offcurve':
+                v = (nb.position.x - pos[0], nb.position.y - pos[1])
+                cross = (v[0] * tg[1] - v[1] * tg[0]) / (math.hypot(*v) * math.hypot(*tg) or 1)
+                follows.append(abs(cross) < 0.03)
+            else:
+                follows.append(False)
+        found[(i, n)] = (i, n, j, seg, t, pos[1] - y, follows,
+                         bracket_tips(nodes, n, pos, tg) if tips else [])
+
     for i, p in enumerate(paths):
         nodes = list(p.nodes)
         for n, node in enumerate(nodes):
             if node.type == 'offcurve':
                 continue
             pos = (node.position.x, node.position.y)
-            for j, q in enumerate(paths):
+            if any(pos in on_nodes[j] for j in range(len(paths)) if j != i):
+                continue                          # node on node: both move alike
+            # every qualifying edge of the other pieces near this node
+            near = []
+            for j in range(len(paths)):
                 if j == i:
                     continue
-                for seg in segments(q):
-                    pts = seg_pts(q, seg)
-                    if pos in (pts[0], pts[-1]):
-                        break                  # node on node: both move alike
+                for seg, pts, box in segs[j]:
+                    if not (box[0] <= pos[0] <= box[2] and box[1] <= pos[1] <= box[3]):
+                        continue
                     t, d = closest(pts, pos)
-                    if d <= tol and 0 < t < 1:
-                        # does an adjacent handle run along the edge here?
-                        _, tg = bez(pts, t)
-                        follows = []
-                        for nb in (nodes[n - 1], nodes[(n + 1) % len(nodes)]):
-                            if nb.type == 'offcurve':
-                                v = (nb.position.x - pos[0], nb.position.y - pos[1])
-                                cross = (v[0] * tg[1] - v[1] * tg[0]) / (math.hypot(*v) * math.hypot(*tg) or 1)
-                                follows.append(abs(cross) < 0.03)
-                            else:
-                                follows.append(False)
-                        joins.append((i, n, j, seg, t, follows))
-                        break
-                else:
-                    continue
-                break
-    return joins
+                    if not (d <= tol and 0.001 < t < 0.999 and (d <= ON_EDGE or abs(areas[i]) < abs(areas[j]))):
+                        continue
+                    q, tg = bez(pts, t)
+                    nx, ny = _normal(tg)
+                    off = (pos[0] - q[0]) * nx + (pos[1] - q[1]) * ny
+                    # off the edge, only a smaller piece (bracket, wedge) inside a
+                    # bigger one (stroke) is tied, never the other way round
+                    if d > ON_EDGE and (off > 0) != ink_left[j]:
+                        continue
+                    near.append((d, j, seg, pts, t, tg, off))
+            if not near:
+                continue
+            near.sort(key=lambda c: c[0])
+            a = near[0]
+            second = None
+            for b in near[1:]:
+                ang = abs(math.degrees(math.atan2(a[5][0] * b[5][1] - a[5][1] * b[5][0],
+                                                  a[5][0] * b[5][0] + a[5][1] * b[5][1])))
+                if 10 < ang < 170:
+                    second = b
+                    break
+            if second is not None:
+                # a wedge or throat corner inside two edges that meet at an
+                # angle (of two strokes, or two curves of one): it goes back
+                # where its two drawn offsets cross
+                corners.append((i, n, 'corner', [(c[1], c[2], c[4], c[6]) for c in (a, second)],
+                                None, None, [False, False], []))
+                continue
+            d, j, seg, pts, t, tg, off = a
+            tie(i, n, j, seg, pts, t, nodes)
+    # a bracket tip's other node follows the same edge
+    cornered = {(c[0], c[1]) for c in corners}
+    for i, n, j, seg, t, _, _, tips in list(found.values()):
+        nodes = list(paths[i].nodes)
+        for k, *_ in tips:
+            if (i, k) not in found and (i, k) not in cornered:
+                tie(i, k, j, seg, seg_pts(paths[j], seg), t, nodes, tips=False)
+    return list(found.values()) + corners
+
+
+TIP = 8  # units: a join node this close to the next on-curve node is a bracket tip
+
+
+def bracket_tips(nodes, n, pos, tg):
+    """The thin flat end of a bracket piece: the join node n, a line of at
+    most TIP units to the next on-curve node P, then the fillet curve leaving
+    P along the stroke edge. Record P's fillet handle as drawn, with the
+    edge direction, so it can be turned with the edge after the move:
+    otherwise a steeper stroke leaves the fillet dipping across its edge."""
+    tips = []
+    N = len(nodes)
+    for step in (-1, 1):
+        k = (n + step) % N
+        P = nodes[k]
+        if P.type == 'offcurve' or math.dist(pos, tuple(P.position)) > TIP:
+            continue
+        h = (k + step) % N
+        H = nodes[h]
+        tips.append((k, h if H.type == 'offcurve' else None, tuple(P.position), tuple(H.position), pos, tg))
+    return tips
+
+
+def _rotate(v, a):
+    c, s = math.cos(a), math.sin(a)
+    return v[0] * c - v[1] * s, v[0] * s + v[1] * c
 
 
 def snap_joins(layer, joins):
-    """Re-seat each join node on its edge after the move, with handles that
-    followed the edge turned to follow it again, and round it to the
-    integer point nearest the edge."""
+    """Give each tied node back its drawn height above or below its edge, at
+    its own (unchanged) x; handles that ran along the edge are set back on
+    it, again by height only. Then the fillet handle leaving each bracket tip
+    keeps its drawn angle to the edge."""
     paths = list(layer.paths)
-    for i, n, j, seg, t, follows in joins:
+    turns = []
+    for i, n, j, seg, t, offset, follows, tips in joins:
         nodes = list(paths[i].nodes)
-        pts = seg_pts(paths[j], seg)
         node = nodes[n]
-        here = (node.position.x, node.position.y)
-        t, _ = closest(pts, here)
-        (x, y), tg = bez(pts, t)
-        # integer point nearest the edge
-        cands = [(math.floor(x) + dx, math.floor(y) + dy) for dx in (0, 1) for dy in (0, 1)]
-        node.position.x, node.position.y = min(cands, key=lambda c: (closest(pts, c)[1], math.dist(c, (x, y))))
-        L = math.hypot(*tg) or 1
-        u = (tg[0] / L, tg[1] / L)
+        if j == 'corner':
+            # where the two edges, each shifted by the node's drawn distance
+            # inside it, cross after the move
+            here = (node.position.x, node.position.y)
+            lines = []
+            for jj, sg, t0, off in seg:
+                pts = seg_pts(paths[jj], sg)
+                tt, _ = closest(pts, here)
+                q, tg = bez(pts, tt)
+                nx, ny = _normal(tg)
+                lines.append(((q[0] + nx * off, q[1] + ny * off), tg))
+            (p1, d1), (p2, d2) = lines
+            det = d1[0] * d2[1] - d1[1] * d2[0]
+            if abs(det) > 1e-9:
+                s1 = ((p2[0] - p1[0]) * d2[1] - (p2[1] - p1[1]) * d2[0]) / det
+                x, y = p1[0] + d1[0] * s1, p1[1] + d1[1] * s1
+                if math.dist((x, y), here) < 3 * JOIN:
+                    node.position.x, node.position.y = round(x), round(y)
+            continue
+        hit = edge_y(seg_pts(paths[j], seg), node.position.x, t)
+        if hit is None:
+            continue
+        _, y, tg = hit
+        node.position.y = round(y + offset)
+        slope = tg[1] / tg[0]
         for nb, f in zip((nodes[n - 1], nodes[(n + 1) % len(nodes)]), follows):
-            if not f:
+            if f:
+                nb.position.y = round(node.position.y + (nb.position.x - node.position.x) * slope)
+        turns.append((i, tg, tips))
+    for i, tg, tips in turns:
+        nodes = list(paths[i].nodes)
+        for k, h, P0, H0, J0, tg0 in tips:
+            if h is None:
                 continue
-            v = (nb.position.x - node.position.x, nb.position.y - node.position.y)
-            along = v[0] * u[0] + v[1] * u[1]
-            nb.position.x = round(node.position.x + u[0] * along)
-            nb.position.y = round(node.position.y + u[1] * along)
+            turn = math.atan2(tg[1], tg[0]) - math.atan2(tg0[1], tg0[0])
+            turn = (turn + math.pi) % (2 * math.pi) - math.pi
+            P, H = nodes[k], nodes[h]
+            length = math.dist((P.position.x, P.position.y), (H.position.x, H.position.y))
+            d = _rotate((H0[0] - P0[0], H0[1] - P0[1]), turn)
+            m = math.hypot(*d) or 1
+            H.position.x = round(P.position.x + d[0] / m * length)
+            H.position.y = round(P.position.y + d[1] / m * length)
 
 
 def realign_smooth(path, skip=()):
@@ -324,8 +482,13 @@ def main():
             for n in pr.nodes:
                 n.position.x, n.position.y = round(n.position.x), round(n.position.y)
         snap_joins(reg, joins)
-        off = max((closest(seg_pts(reg.paths[j], seg), tuple(reg.paths[i].nodes[n].position))[1]
-                   for i, n, j, seg, _, _ in joins), default=0)
+        off = 0.0
+        for i, n, j, seg, t0, o, *_ in joins:
+            if j == 'corner':
+                continue
+            hit = edge_y(seg_pts(reg.paths[j], seg), reg.paths[i].nodes[n].position.x, t0)
+            if hit:
+                off = max(off, abs(reg.paths[i].nodes[n].position.y - (hit[1] + o)))
         for at, ar in zip(thin.anchors, reg.anchors):
             ar.position.y = round(lerp(at.position.y, ar.position.y))
         ys = [n.position.y for p in reg.paths for n in p.nodes]

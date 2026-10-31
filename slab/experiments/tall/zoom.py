@@ -1,7 +1,7 @@
 """Zoomed outline views of one glyph from several builds, side by side,
 with on-curve nodes (red) and handles (blue), to inspect joins by eye.
 
-usage: zoom.py OUT.png GLYPH X0 Y0 X1 Y1 FONT.otf [FONT.otf ...]
+usage: zoom.py OUT.png GLYPH X0 Y0 X1 Y1 FONT[@wght,opsz] [FONT[@wght,opsz] ...]
 (X0..Y1: the font-unit window to show; it is scaled to 700 px wide)
 """
 import sys
@@ -19,11 +19,13 @@ def main():
     k = W / (x1 - x0)
     H = int((y1 - y0) * k)
     img = Image.new('RGB', (W * len(fonts) + 20 * (len(fonts) - 1), H), 'white')
-    for fi, path in enumerate(fonts):
+    for fi, spec in enumerate(fonts):
+        # FONT or FONT@wght,opsz for a variable font
+        path, _, at = spec.partition('@')
         tt = TTFont(path)
-        gs = tt.getGlyphSet()
+        gs = tt.getGlyphSet(location=dict(zip(('wght', 'opsz'), map(float, at.split(','))))) if at else tt.getGlyphSet()
         rp = RecordingPen()
-        gs[tt.getBestCmap()[ord(ch)]].draw(rp)
+        gs[tt.getBestCmap()[ord(ch)] if len(ch) == 1 else ch].draw(rp)   # a character or a glyph name
         ox = fi * (W + 20)
         panel = Image.new('RGB', (W, H), 'white')   # own canvas, so nothing spills over
         P = lambda p: ((p[0] - x0) * k, (y1 - p[1]) * k)
