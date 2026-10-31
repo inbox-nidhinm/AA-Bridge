@@ -118,7 +118,7 @@ def master(style):
     i.postscriptIsFixedPitch = True
     i.openTypeOS2Panose = [2, 0, 5, 9, 0, 0, 0, 0, 0, 0]
     i.openTypeOS2WeightClass = WEIGHTS[style]
-    i.versionMajor, i.versionMinor = 0, 100
+    i.versionMajor, i.versionMinor = 0, 101
     i.copyright = 'Copyright 2026 The Trupeer Sans Mono Project Authors. Drawn from Trupeer Sans (from Montagu Slab, copyright 2020 The Montagu Slab Project Authors).'
     i.openTypeNameLicense = 'This Font Software is licensed under the SIL Open Font License, Version 1.1.'
     i.openTypeNameLicenseURL = 'https://openfontlicense.org'
