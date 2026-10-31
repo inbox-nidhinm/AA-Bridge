@@ -425,7 +425,11 @@ def apply_family(font, base, new_path, advance, only=None):
             else:
                 rest.append((pts, fl))
         if hits:
-            offs = {(round(sum(h[2] for h in hits) / len(hits)), round(sum(h[3] for h in hits) / len(hits)))}
+            # the offset of the matched group as a whole (a letter can repeat a
+            # contour, like H's two stems, so per-contour offsets can mislead)
+            hb = bounds([p for h in hits for p in h[0]])
+            ob = bounds([p for c in old for p in c[0]])
+            offs = {(round(hb[0] - ob[0]), round(hb[1] - ob[1]))}
         if len(hits) != len(old) or len(offs) != 1:
             skipped.append(name)
             continue
@@ -491,7 +495,7 @@ def longer_E_bar(font, extra):
 
 # ---------------------------------------------------------------- even strokes
 
-def even_strokes(font, stem, even, overrides):
+def even_strokes(font, stem, even, overrides, skip=()):
     """Bring every thin stroke up to `even` x its glyph's stem."""
     glyf, gs = font['glyf'], font.getGlyphSet()
     m = measure(font)
@@ -505,7 +509,7 @@ def even_strokes(font, stem, even, overrides):
     report = {}
     for name in font.getGlyphOrder():
         g = glyf[name]
-        if g.isComposite() or g.numberOfContours <= 0 or classes.get(name) == 3:
+        if g.isComposite() or g.numberOfContours <= 0 or classes.get(name) == 3 or name in skip:
             continue
         pen = Flat(gs)
         gs[name].draw(pen)

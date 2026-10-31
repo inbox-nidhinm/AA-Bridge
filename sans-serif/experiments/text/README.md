@@ -43,9 +43,22 @@ than thin the thick ones, and for plainer letters. `step2.py` builds
 It reads darker than Before and Inter (like a Medium); a lighter base is an
 option if that is too heavy. `plot.py` draws outlines on a grid for planning.
 
+## Step 3: one stroke width (Regular only)
+
+Nidhin's notes (2026-11-01): strokes the same width in every letter, varying
+only slightly at joints; t without its curved foot; single-storey g as the
+default; plain a, c, f. `step3.py` redraws a-z, A-Z, 0-9, fi and fl from centre
+lines with one pen (`--weight`, default 100), keeping each letter's current
+width, height and stem positions (t and f narrower). Every measured stroke is
+1.00 of the pen. Accented letters get the new base letter; everything not
+redrawn goes through step 2's even-stroke pass. Builds
+`fonts/AABridgeSansTextStep3-Regular.ttf`.
+
+Step 1's C75/C82/C88 were set aside after this (still in this folder).
+
 ## Next steps
 
-1. Decide the weight of the text Regular.
+1. Decide the weight of the text Regular (pen width).
 2. Narrow round letters and figures; shorten t, f and r; plain t.
 3. Distinct I and l; tabular figures.
 4. Respace and re-kern by eye.
