@@ -28,10 +28,25 @@ C82 is the suggested level. Widths, terminals and everything else are unchanged.
 
 Run them from the repo root with a Python that has fontTools and Pillow.
 
+## Step 2: even strokes and plain letters (Regular only)
+
+After step 1, Nidhin asked (2026-11-01) to thicken the thin strokes rather
+than thin the thick ones, and for plainer letters. `step2.py` builds
+`fonts/AABridgeSansTextStep2-Regular.ttf` from the current Regular (stem 104):
+
+- thin strokes raised to 0.89 of the stem (was 0.61), including the thin top of C and G
+- no curls or balls: a, c, f (fi, fl), g, 6, Q, j
+- R with a straight leg ending just inside the bowl; S as one smooth even stroke
+- longer E middle bar; r's arm end as thick as the stem; smaller i/j dots (all 29 letters with that dot)
+- outlines merged, no overlaps
+
+It reads darker than Before and Inter (like a Medium); a lighter base is an
+option if that is too heavy. `plot.py` draws outlines on a grid for planning.
+
 ## Next steps
 
-1. Narrow round letters and figures; shorten t, f and r.
-2. Plain terminals for a c f t 5 6 g R Q (curls stay in the display cut).
+1. Decide the weight of the text Regular.
+2. Narrow round letters and figures; shorten t, f and r; plain t.
 3. Distinct I and l; tabular figures.
 4. Respace and re-kern by eye.
 5. Draw the text cut into the source as its own masters, all weights; extend opsz down to about 10 or 12.

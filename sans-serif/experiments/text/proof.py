@@ -18,9 +18,10 @@ SETS = [('Before', os.path.join(FONTS, 'AABridgeSansTextBefore-Regular.ttf')),
         ('C75', os.path.join(FONTS, 'AABridgeSansTextC75-Regular.ttf')),
         ('C82', os.path.join(FONTS, 'AABridgeSansTextC82-Regular.ttf')),
         ('C88', os.path.join(FONTS, 'AABridgeSansTextC88-Regular.ttf')),
+        ('Step2', os.path.join(FONTS, 'AABridgeSansTextStep2-Regular.ttf')),
         ('Inter', INTER)]
 
-LETTERS = 'Hamburgefonstiv eoasc RQSG 0123'
+LETTERS = 'Hamburgefonstiv eoasc RQSG 0126'
 PARA = ('Screen typography is judged at small sizes, in long\n'
         'paragraphs, under poor light. The letters have to stay\n'
         'distinct when each stroke is a pixel or two wide, and the\n'
@@ -50,10 +51,12 @@ def stack(images, labels, path, scale=1):
 
 
 tmp = os.path.join(OUT, '_part.png')
-big = [hb(f, LETTERS, 120, tmp) for _, f in SETS[:4]]
-stack(big, [s for s, _ in SETS[:4]], os.path.join(OUT, 'letters.png'))
+LET = [s for s in SETS if s[0] in ('Before', 'C82', 'Step2')]
+big = [hb(f, LETTERS, 120, tmp) for _, f in LET]
+stack(big, [s for s, _ in LET], os.path.join(OUT, 'letters.png'))
 for size in (13, 16):
-    paras = [hb(f, PARA, size, tmp, size // 2) for _, f in SETS]
-    stack(paras, [s for s, _ in SETS], os.path.join(OUT, f'paragraph-{size}px.png'), scale=2)
+    PS = [s for s in SETS if s[0] in ('Before', 'C82', 'Step2', 'Inter')]
+    paras = [hb(f, PARA, size, tmp, size // 2) for _, f in PS]
+    stack(paras, [s for s, _ in PS], os.path.join(OUT, f'paragraph-{size}px.png'), scale=2)
 os.remove(tmp)
 print('wrote', sorted(os.listdir(OUT)))
