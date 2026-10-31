@@ -64,8 +64,8 @@ def find(names):
             d, extra = m
             # a second letter (the LJ, Dž digraphs) is not an accent: those are fitted whole
             box = [n for i in extra for n in REG[name]['contours'][i]]
-            if max(n[1] for n in box) - min(n[1] for n in box) > LETTER and \
-               max(n[0] for n in box) - min(n[0] for n in box) > LETTER / 2: continue
+            # (height alone decides: the Sans's j is too narrow to be told apart by width)
+            if max(n[1] for n in box) - min(n[1] for n in box) > LETTER: continue
             anchors = REG[base]['anchors']
             marks = []
             for i in extra:

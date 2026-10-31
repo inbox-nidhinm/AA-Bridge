@@ -48,12 +48,48 @@ def features():
     return fea
 
 
+SLOT_MARGIN = 15     # ink may reach this far past the slot's edges
+FIT_WIDTH = 590      # a glyph narrowed to fit is this wide
+
+
+def settle(name, style, contours, anchors):
+    """An accented letter whose accent hangs off the slot (the horn of ơ, the caron of ď, the bars
+    of Đ, Ł, Ħ) is moved back to the slot's centre if it fits, or else drawn whole and narrowed."""
+    xs = [n[0] for c in contours for n in c]
+    x0, x1 = min(xs), max(xs)
+    if x0 >= -SLOT_MARGIN and x1 <= 600 + SLOT_MARGIN:
+        return contours, anchors
+    if x1 - x0 <= FIT_WIDTH:
+        dx = round(300 - (x0 + x1) / 2)
+        return ([[(x + dx, y, t) for x, y, t in c] for c in contours],
+                {a: (x + dx, y) for a, (x, y) in anchors.items()})
+    gl = G(name, style)
+    gl.condense(FIT_WIDTH / S)
+    return gl.final(), gl.placed
+
+
+def ldot(contours, n, style):
+    """ŀ: the l's curled tail rises where the source puts the middle dot, so the dot goes up
+    to two thirds of the x-height, over the tail's bowl."""
+    base, dots = contours[:n], contours[n:]
+    xs = [p[0] for c in base for p in c]
+    dx, dy = [p[0] for c in dots for p in c], [p[1] for c in dots for p in c]
+    cx, cy = (min(dx) + max(dx)) / 2, (min(dy) + max(dy)) / 2
+    tx, ty = min(xs) + 0.74 * (max(xs) - min(xs)), 0.68 * X_HEIGHT[style] * S
+    return base + [[(round(x + tx - cx), round(y + ty - cy), t) for x, y, t in c] for c in dots]
+
+AFTER = {'ldot': ldot}
+
+
 def make(name, style, done):
     """A glyph's finished contours, anchors and centre (in the cell's units)."""
     if name not in done:
         if name in STRUCTURE:
             base = make(STRUCTURE[name][0], style, done)
             contours, anchors = compose.assemble(name, style, STRUCTURE[name], base)
+            if name in AFTER:
+                contours = AFTER[name](contours, len(base[0]), style)
+            contours, anchors = settle(name, style, contours, anchors)
         elif name in ALT:
             gl = G(ALT[name][0], style)
             ALT[name][1](gl)
