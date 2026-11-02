@@ -20,8 +20,15 @@ from fontTools.ttLib import TTFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, '..')
-new = sys.argv[1]
-major, minor = new.split('.')
+new = sys.argv[1] if len(sys.argv) == 2 else ''
+# Validate the whole string before touching any file. The minor part must be
+# exactly three digits: fontmake writes versionMinor zero-padded to three, so
+# "0.1" would stamp the fonts 0.1 but make the next build 0.001.
+m = re.fullmatch(r'(\d+)\.(\d{3})', new, re.ASCII)
+if not m:
+    sys.exit(f'usage: python sans-serif/tools/setversion.py MAJOR.MMM '
+             f'(e.g. 0.106); got {new!r}')
+major, minor = m.groups()
 rev = float(new)
 
 paths = []
